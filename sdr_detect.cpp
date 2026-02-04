@@ -3,47 +3,27 @@
 #include <fstream>
 #include <vector>
 #include "RTLSDR/rtl-sdr.h"
-#include <windows.h>
 #include <cmath>
-
-#pragma comment(lib, "winmm.lib")
+#include <unistd.h>
+#include <termios.h>
+#include <thread>
 const int SAMPLE_RATE_SDR = 1000000; // 1 MGHz
 const int AUDIO_SAMPLE_RATE = 48000; // 48 KHz
 const int DECIMATION = SAMPLE_RATE_SDR / AUDIO_SAMPLE_RATE;
 const float PI = 3.14159265f;
-class WinAudio {
+class LinuxAudio {
 public:
-	WinAudio() {
-		waveOutOpen(&hWaveOut, WAVE_MAPPER, &waveFormat, 0, 0, CALLBACK_NULL);
-	}
-	void Init() {
-	}
+	LinuxAudio() {}
+	void Init() {}
 	void playTone(int frequency, int duration_ms) {
-		int samples = (AUDIO_SAMPLE_RATE * duration_ms) / 1000;
-		std::vector<short> buffer(samples);
-		for (int i = 0; i < samples; ++i) {
-			buffer[i] = static_cast<short>(32767 * sin((2.0 * PI * frequency * i) / AUDIO_SAMPLE_RATE));
-		}
-		WAVEHDR waveHeader = {};
-		waveHeader.lpData = reinterpret_cast<LPSTR>(buffer.data());
-		waveHeader.dwBufferLength = samples * sizeof(short);
-		waveOutPrepareHeader(hWaveOut, &waveHeader, sizeof(WAVEHDR));
-		waveOutWrite(hWaveOut, &waveHeader, sizeof(WAVEHDR));
-		Sleep(duration_ms);
-		waveOutUnprepareHeader(hWaveOut, &waveHeader, sizeof(WAVEHDR));
+		// Placeholder for Linux audio implementation
+		// You can integrate PulseAudio or ALSA later
 	}
-private:
-	HWAVEOUT hWaveOut;
-	WAVEFORMATEX waveFormat = {
-		WAVE_FORMAT_PCM,
-		1,
-		AUDIO_SAMPLE_RATE,
-		AUDIO_SAMPLE_RATE * sizeof(short),
-		sizeof(short),
-		16,
-		0
-	};
 };
+
+bool is_key_pressed(char key) {
+	return false; // Placeholder - would require termios for non-blocking input
+}
 int main() {
 	bool is_recording = false;
 	bool audio_enabled = false;
@@ -97,10 +77,10 @@ int main() {
 	rtlsdr_set_center_freq(dev, center_freq);
 	rtlsdr_set_tuner_gain_mode(dev, 0); // Auto gain
 	rtlsdr_reset_buffer(dev); // Clear buffer before starting
-	WinAudio player;
+	LinuxAudio player;
 	player.Init(); 
-	std::cout << "Reading signal (Press Ctrl+C to stop)" << "MHz." << std::endl;
-	std::cout << "{R} Start/Stop Recording | {SPACE} Toggle Audio | {Q} Quit" << std::endl;
+	std::cout << "Reading signal (Press Ctrl+C to stop)" << std::endl;
+	std::cout << "Recording will start after first signal detection" << std::endl;
 	uint8_t buffer[16384];
 	int n_read = 0;
 	while (true) {
@@ -112,39 +92,11 @@ int main() {
 		double current_buffer_power = 0.0;
 		for (int i = 0; i < n_read; ++i) {
 			current_buffer_power += (static_cast<double>(buffer[i]) - 127.5) * (static_cast<double>(buffer[i]) - 127.5);
-			// Sample and var are undifind
 		}
 		double average_power = current_buffer_power / n_read;
 		double db = 10 * std::log10(average_power);
-		if (is_key_pressed('Q')) {
-			std::cout << "\nExiting..." << std::endl;
-			break;
-		}
-		if (is_key_pressed('R')) {
-			if (!is_recording) {
-				recording_file.open("sdr_recording.bin", std::ios::binary);
-				if (recording_file.is_open()) {
-					is_recording = true;
-					std::cout << "\nRecording started." << std::endl;
-				}
-				else {
-					std::cerr << "\nError: Unable to open recording file." << std::endl;
-				}
-			}
-			else {
-				is_recording = false;
-				if (recording_file.is_open()) {
-					recording_file.close();
-				}
-				std::cout << "\nRecording stopped." << std::endl;
-			}
-			Sleep(300); // Debounce
-		}
-		if (is_key_pressed(VK_SPACE)) {
-			audio_enabled = !audio_enabled;
-			std::cout << "\nAudio " << (audio_enabled ? "enabled." : "disabled.") << std::endl;
-			Sleep(300); // Debounce
-		}
+		std::cout << "Signal Power: " << db << " dB\r";
+		std::cout.flush();
 	}
 	if (is_recording && recording_file.is_open()) recording_file.close();
  	rtlsdr_close(dev);
