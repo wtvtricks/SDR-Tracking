@@ -125,9 +125,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\sdr_detect.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\..\..\Downloads\Shared folder\RTL-SDR\rtlsdr.lib" />
+    <ClCompile Include="rtl-sdr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Downloads\Shared folder\RTL-SDR\rtlsdr.dll">
@@ -138,6 +136,12 @@
     <ClInclude Include="rtl-sdr.h">
       <DeploymentContent>true</DeploymentContent>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\rtl-sdr.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </Library>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

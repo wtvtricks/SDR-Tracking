@@ -18,9 +18,9 @@
     <ClCompile Include="..\sdr_detect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\..\..\Downloads\Shared folder\RTL-SDR\rtlsdr.lib" />
+    <ClCompile Include="rtl-sdr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Downloads\Shared folder\RTL-SDR\rtlsdr.dll" />
@@ -29,5 +29,8 @@
     <ClInclude Include="rtl-sdr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\rtl-sdr.lib" />
   </ItemGroup>
 </Project>

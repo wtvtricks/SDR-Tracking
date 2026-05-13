@@ -1,6 +1,8 @@
 //Made by @oemat2,and @wtvtricks
 #include <iostream>
 #include <fstream>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <vector>
 #include "RTLSDR/rtl-sdr.h"
 #include <windows.h>
@@ -9,6 +11,7 @@
 
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "rtl-sdr.lib")
+#pragma comment(lib, "ws2_32.lib")
 
 const int SAMPLE_RATE_SDR = 1024000; // Use a power of 2 for better stability
 const int AUDIO_SAMPLE_RATE = 48000;
@@ -63,19 +66,51 @@ bool is_key_pressed(int vkey) {
     return (GetAsyncKeyState(vkey) & 0x8000) != 0;
 }
 
-int main() {
+struct Checkbox {
+    bool clicked;
+};
+
+Checkbox use_rtl_checkbox = { false };
+
+int main()  {
     double user_freq_mhz = 0.0;
-    std::cout << "SDR SIGNAL METER V1.1\nEnter Frequency (MHz): ";
+    std::cout << "SDR SIGNAL METER V1.2\nEnter Frequency (MHz): ";
     std::cin >> user_freq_mhz;
+    uint32_t freq_hz = (uint32_t)(user_freq_mhz * 1e6);
 
     rtlsdr_dev_t* dev = nullptr;
-    if (rtlsdr_open(&dev, 0) < 0) {
-        std::cerr << "Failed to open RTL-SDR." << std::endl;
-        return 1;
+
+    if (use_rtl_checkbox.clicked) {
+        WSADATA wsa;
+        int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsa);
+        if (wsaResult != 0) {
+            std::cerr << "WSAStartup failed with error: " << wsaResult << std::endl;
+            return 1;
+        }
+        SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+        sockaddr_in serverAddr{};
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_port = htons(1234);
+        serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        connect(s, (sockaddr*)&serverAddr, sizeof(serverAddr));
+        if (s == INVALID_SOCKET) {
+            std::cerr << "Socket creation failed." << std::endl;
+            WSACleanup();
+            return 1;
+        }
+        else {
+            if (rtlsdr_open(&dev, 0) < 0) {
+                std::cerr << "Failed to open TCP." << std::endl;
+                return 1;
+            }
+            rtlsdr_set_sample_rate(dev, freq_hz);
+            std::cout << "TCP Connected to SDR at " << user_freq_mhz << " MHz" << std::endl;
+            std::cout << "Using TCP for SDR data." << std::endl;
+        }
     }
 
     // Setup Hardware
-    uint32_t freq_hz = (uint32_t)(user_freq_mhz * 1e6);
     rtlsdr_set_sample_rate(dev, SAMPLE_RATE_SDR);
     rtlsdr_set_center_freq(dev, freq_hz);
     rtlsdr_set_tuner_gain_mode(dev, 0); // Auto-gain
@@ -107,10 +142,8 @@ int main() {
         std::cout << "\rSignal Strength: " << db << " dB    " << std::flush;
 
         // 2. Simple AM Demodulation (for the sake of hearing 'something')
-        // In a real app, you'd decimate from 1MHz to 48kHz here.
         std::vector<short> audio_samples;
         for (int i = 0; i < n_read; i += 2) {
-            // Magnitude of I/Q complex pair
             double I = rtl_buffer[i] - 127.5;
             double Q = rtl_buffer[i + 1] - 127.5;
             short mag = (short)(std::sqrt(I * I + Q * Q) * 200);
