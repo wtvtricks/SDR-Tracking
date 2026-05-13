@@ -1,11 +1,10 @@
 #ifndef __RTL_SDR_H
 #define __RTL_SDR_H
-//Tooked from https://raw.githubusercontent.com/steve-m/librtlsdr/refs/heads/master/include/rtl-sdr.h
+	
+#include <stdint.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdint.h>
 
 
 #if defined(_WIN32)
@@ -31,14 +30,7 @@ extern "C" {
 	RTLSDR_API int rtlsdr_open(rtlsdr_dev_t** dev, uint32_t index);
 
 	RTLSDR_API int rtlsdr_close(rtlsdr_dev_t* dev);
-
-	/* crystal oscillator frequencies */
-	RTLSDR_API int rtlsdr_set_xtal_freq(rtlsdr_dev_t* dev, uint32_t rtl_freq, uint32_t tuner_freq);
-	RTLSDR_API int rtlsdr_get_xtal_freq(rtlsdr_dev_t* dev, uint32_t* rtl_freq, uint32_t* tuner_freq);
-
-	/* frequency correction */
-	RTLSDR_API int rtlsdr_get_usb_strings(rtlsdr_dev_t* dev, char* vendor, char* product, char* serial);
-
+	RTLSDR_API int rtlsdr_set_sample_rate(rtlsdr_dev_t* dev, uint32_t rate);
 	RTLSDR_API int rtlsdr_set_center_freq(rtlsdr_dev_t* dev, uint32_t freq);
 	RTLSDR_API uint32_t rtlsdr_get_center_freq(rtlsdr_dev_t* dev);
 
@@ -76,4 +68,4 @@ extern "C" {
 }
 #endif
 
-#endif /* __RTL_SDR_H */#pragma once
+#endif // __RTL_SDR_H
